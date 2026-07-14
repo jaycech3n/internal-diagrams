@@ -74,6 +74,17 @@ module SimpleSemicategories-IsStrictlyOriented {ℓₘ}
     ≼-cancel-r f g h (inl p) = =-≼ (hom-is-epi _ _ _ (idx=-hom= p))
     ≼-cancel-r f g h (inr u) = inr (≺-cancel-r _ _ _ u)
 
+  -- In a strictly oriented semicategory, divisibility is a proposition:
+  -- the factor is unique because every morphism is an epimorphism, and
+  -- hom-sets are sets.
+  ∣-is-prop :
+    ∀ {i j h} (f : hom i j) (m : hom i h)
+    → is-prop (f ∣ m)
+  ∣-is-prop f m = all-paths-is-prop
+    λ{ (g , p) (g' , p') →
+       pair= (hom-is-epi f g g' (p ∙ ! p'))
+             (prop-has-all-paths-↓ ⦃ has-level-apply hom-is-set _ _ ⦄) }
+
   idx-◦-O :
     ∀ {l m n} (f : hom l m) (g : hom m n)
     → idx (g ◦ f) == O

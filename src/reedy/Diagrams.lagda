@@ -36,6 +36,7 @@ module reedy.Diagrams {ℓₘᴵ ℓₒ ℓₘ}
 
 open SimpleSemicategory I
 open SimpleSemicategories-IsStrictlyOriented I I-strictly-oriented
+  using (∣-is-prop)
 open import reedy.Cosieves I
 open Cosieves-StrictlyOriented I-strictly-oriented
 
@@ -744,7 +745,7 @@ M⃗rec=-yes i h t s {j} f yes cfs cfs' =
   cfp = count-factors i h t prev f
 
   Dec-∣-is-prop : is-prop (Dec (f ∣ #[ t ] i h (<-from-shape s)))
-  Dec-∣-is-prop = {! certainly true!}
+  Dec-∣-is-prop = Dec-level (∣-is-prop f (#[ t ] i h (<-from-shape s)))
 
   F : Dec (f ∣ #[ t ] i h (<-from-shape s)) → Type ℓₘ
   F d =
@@ -820,7 +821,7 @@ M⃗ᵗᵒᵖ= i h (1+ t) s f cfs =
   no = ¬divides-same-target i h t u f
 
   Dec-∣-is-prop : is-prop (Dec (f ∣ #[ t ] i h u))
-  Dec-∣-is-prop = {! certainly true !}
+  Dec-∣-is-prop = Dec-level (∣-is-prop f (#[ t ] i h u))
 
   G : Dec (f ∣ #[ t ] i h u) → Type ℓₘ
   G d =
