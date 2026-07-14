@@ -36,6 +36,11 @@ record LocallyFiniteSemicategoryStructure {ℓₒ ℓₘ} {Ob : Type ℓₒ}
                      → idx' (hom[ x , y ]#' i) == i
         idx'-hom#' {x} {y} i = <–-inv-r (hom-equiv x y) i
 
+        -- The defining equation of idx', exported explicitly.
+        idx'-def : ∀ {x y} (f : hom x y)
+                   → to-ℕ (idx' f) == to-ℕ (–> (snd (hom-finite x y)) f)
+        idx'-def f = idp
+
   open basic-definitions public
 
   private
