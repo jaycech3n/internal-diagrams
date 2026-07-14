@@ -33,6 +33,34 @@ module Fin-equality where
 
 open Fin-equality public
 
+{- Transparent decidable equality for ℕ and Fin.
+
+The library's ℕ-has-dec-eq and Fin-has-dec-eq (hence the _≟-ℕ_ / _≟-Fin_ of
+hott.Base) sit inside `abstract` blocks, so they never reduce.
+Here, we want something that computes: _∣?_ (divisibility of morphisms) is
+built from Fin-equality, so with the library versions `count-factors i h t s f`
+never reduces to a numeral, and the whole diagram construction is stuck at
+height ≥ 1 no matter how strict the ambient cwf is.
+
+These copies are definitionally the same functions of the library functions,
+just not abstract.  Only the `inl`/`inr` head matters for reduction; the ≠-proofs
+in the negative branches may stay opaque, which is harmless. -}
+module Fin-dec-eq-transparent where
+  infix 40 _≟ℕ_ _≟Fin_
+
+  _≟ℕ_ : has-dec-eq ℕ
+  O ≟ℕ O = inl idp
+  O ≟ℕ (1+ n) = inr (ℕ-O≠S n)
+  (1+ n) ≟ℕ O = inr (ℕ-S≠O n)
+  (1+ n) ≟ℕ (1+ m) =
+    if (n ≟ℕ m) (λ p → inl (ap 1+ p)) (λ ¬p → inr (¬p ∘ ℕ-S-is-inj n m))
+
+  _≟Fin_ : ∀ {n} → has-dec-eq (Fin n)
+  i ≟Fin j =
+    if (to-ℕ i ≟ℕ to-ℕ j) (λ p → inl (Fin= p)) (λ ¬p → inr (¬p ∘ Fin=-elim))
+
+open Fin-dec-eq-transparent public
+
 module Fin-yoga {ℓ₁ ℓ₂} where
   {- Given a predicate P : Fin (1+ n) → Type and i < n for some n, sometimes we
   want to show that P holds for i by showing that P ∘ Fin-S holds for i : Fin n,

@@ -15,7 +15,11 @@ record LocallyFiniteSemicategoryStructure {ℓₒ ℓₘ} {Ob : Type ℓₒ}
 
   private
     module basic-definitions where
-      abstract
+      -- NOTE: this block used to be `abstract`. This is now changed
+      -- so that hom-size, idx' etc. reduce on concrete numerals, which
+      -- lets Agda evaluate the diagram construction if the cwf is
+      -- sufficiently strict.
+      module _ where
         hom-size : (x y : Ob) → ℕ
         hom-size x y = fst (hom-finite x y)
 
@@ -166,8 +170,9 @@ record LocallyFiniteSemicategoryStructure {ℓₒ ℓₘ} {Ob : Type ℓₒ}
 
   private
     module decidability where
+      -- _≟Fin_, not the library's abstract _≟-Fin_: see hott.Fin.
       _≟-hom_ : ∀ {x y} → has-dec-eq (hom x y)
-      f ≟-hom g = if (idx' f ≟-Fin idx' g)
+      f ≟-hom g = if (idx' f ≟Fin idx' g)
                     (λ  p → inl (idx=-hom= (ap to-ℕ p)))
                     (λ ¬p → inr (¬p ∘ ap idx'))
 
@@ -175,7 +180,9 @@ record LocallyFiniteSemicategoryStructure {ℓₒ ℓₘ} {Ob : Type ℓₒ}
                → ((f : hom x y) → Dec (P f))
                → Dec (Σ[ f ﹕ hom x y ] (P f))
       Σ-hom? {ℓ} {x} {y} P u =
-        transp (Dec ∘ Σ (hom x y)) (λ= (ap P ∘ <–-inv-l e)) dec-hom
+        if dec-Fin
+          (λ  w → inl (<– e (fst w) , snd w))
+          (λ ¬w → inr (λ{ (f , p) → ¬w (–> e f , transp P (! (<–-inv-l e f)) p) }))
           where
           n = hom-size x y
           e = hom-equiv x y
@@ -185,11 +192,6 @@ record LocallyFiniteSemicategoryStructure {ℓₒ ℓₘ} {Ob : Type ℓₒ}
 
           dec-Fin : Dec (Σ[ i ﹕ Fin n ] P (<– e i))
           dec-Fin = Σ-Fin? (P ∘ (<– e)) u'
-
-          dec-hom : Dec (Σ[ f ﹕ hom x y ] P (<– e (–> e f)))
-          dec-hom = if dec-Fin
-                      (λ  u → inl (fwd-transp-Σ-dom e u))
-                      (λ ¬u → inr (λ (f , p) → ¬u (–> e f , p)))
 
       _≺?_ : ∀ {x y} → Decidable $ _≺_ {x} {y}
       f ≺? g = (idx f) <? (idx g)
