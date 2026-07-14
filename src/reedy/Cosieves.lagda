@@ -523,7 +523,7 @@ large enough t.
                ◂$ transp ([t]/f ≺_) p
 
         v' : divby t' u' ≺ [t+1]/f
-        v' = transp (_< _) (! (idx-hom# _) ∙ ap idx p) c
+        v' = transp (_< n) (! (idx-hom# (1+ m) {b}) ∙ ap idx p) c
 
         w : t < t'
         w = divby-reflects-<-monotone v
