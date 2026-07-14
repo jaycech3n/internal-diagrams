@@ -32,6 +32,11 @@ record WildCategoryStructure ℓₒ ℓₘ (Ob : Type ℓₒ) : Type (lsuc (ℓ�
               → idd q ◦ idd p == idd (p ∙ q)
       idd-◦ idp q = idr (idd q)
 
+      -- idd arrows are isomorphisms, so composition with them is cancellable
+      idd-cancel-l : ∀ {x y z} (p : y == z) (σ τ : hom x y)
+                     → idd p ◦ σ == idd p ◦ τ → σ == τ
+      idd-cancel-l idp σ τ e = ! (idl σ) ∙ e ∙ idl τ
+
   open IdArrows public
 
 record WildCategory ℓₒ ℓₘ : Type (lsuc (ℓₒ ∪ ℓₘ)) where

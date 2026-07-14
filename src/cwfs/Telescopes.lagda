@@ -3,7 +3,7 @@ Telescopes in wild cwf's
 
 \begin{code}
 
-{-# OPTIONS --without-K --rewriting --allow-unsolved-metas #-}
+{-# OPTIONS --without-K --rewriting #-}
 
 open import cwfs.CwFs
 
@@ -169,20 +169,175 @@ TODO: clean up the following.
   p : X [ π X ] [ πₜₑₗ (wknₜₑₗ Θ by X) ] == X [ πₜₑₗ Θ ◦ (π X ++ₛ Θ) ]
   p = ![◦] ∙ [= ! (++ₛ-comm (π X) Θ)]
 
-wkn-sub-lemma :
-  ∀ {Γ} (Θ Θ' : Tel Γ) (X : Ty Γ)
-  → (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
-  → πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ
-  → Σ (Sub (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ) (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ'))
-    λ σ↑X → (π X ++ₛ Θ') ◦ σ↑X == σ ◦ (π X ++ₛ Θ)
-wkn-sub-lemma = {!-- This is Lemma 4.2 in the paper, version as of 18.03.2024!}
+\end{code}
 
-wkn-sub :
-  ∀ {Γ} (Θ Θ' : Tel Γ) (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
-  → πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ
-  → (X : Ty Γ)
-  → Sub (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ) (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ')
-wkn-sub Θ Θ' σ p X = fst (wkn-sub-lemma Θ Θ' X σ p)
+NEW: Telescope weakening.
+
+Given telescopes Θ, Θ' over Γ and a substitution σ : Sub (Γ ++ Θ) (Γ ++ Θ')
+over Γ (i.e. commuting with the projections to Γ), we construct its weakening
+by a type X : Ty Γ,
+
+                      σ↑X
+    Γ ∷ X ++ Θ[π X] -------> Γ ∷ X ++ Θ'[π X]
+         |                        |
+         | π X ++ₛ Θ              | π X ++ₛ Θ'
+         ↓                        ↓
+       Γ ++ Θ ------------------> Γ ++ Θ'
+                       σ
+
+such that the square commutes and σ↑X again lies over Γ ∷ X.  We also prove
+that σ↑X is the unique substitution with these two properties.
+
+** THIS IS WHERE SET-LEVEL COMES IN. **
+In a general wild cwf this construction requires an infinite tower of
+coherence data (the first layer of which is the pentagon coherence for
+substitution in types). We work in a *set-level* cwf, where
+all such coherences are automatic. This is the only place where the
+set-level assumptions enter the diagram construction.
+
+\begin{code}
+
+open import cwfs.SetLevel
+
+module TelescopeWeakening (setlvlstr : SetLevelStructure cwfstr) where
+  open SetLevelStructure setlvlstr
+
+  wkn-sub-lemma :
+    ∀ {Γ} (Θ Θ' : Tel Γ) (X : Ty Γ)
+    → (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
+    → πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ
+    → Σ (Sub (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ) (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ'))
+      λ σ↑X → ((π X ++ₛ Θ') ◦ σ↑X == σ ◦ (π X ++ₛ Θ))
+            × (πₜₑₗ (wkₜₑₗ Θ') ◦ σ↑X == πₜₑₗ (wkₜₑₗ Θ))
+
+  wkn-sub-lemma {Γ} Θ • X σ p =
+    πₜₑₗ (wkₜₑₗ Θ) ,
+    ! (++ₛ-comm (π X) Θ) ∙ ap (_◦ (π X ++ₛ Θ)) (! p ∙ idl σ) ,
+    idl _
+
+  wkn-sub-lemma {Γ} Θ (Θ' ‣ A) X σ p = σ↑ , sq , sl
+    where
+    Ā = A [ π X ++ₛ Θ' ]
+
+    σ' : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ')
+    σ' = π A ◦ σ
+
+    p' : πₜₑₗ Θ' ◦ σ' == πₜₑₗ Θ
+    p' = ! ass ∙ p
+
+    rec = wkn-sub-lemma Θ Θ' X σ' p'
+    τ = fst rec
+    sq' = fst (snd rec)   -- (π X ++ₛ Θ') ◦ τ == σ' ◦ (π X ++ₛ Θ)
+    sl' = snd (snd rec)   -- πₜₑₗ (wkₜₑₗ Θ') ◦ τ == πₜₑₗ (wkₜₑₗ Θ)
+
+    c₀ : Tm (A [ π A ] [ σ ] [ π X ++ₛ Θ ])
+    c₀ = υ A [ σ ]ₜ [ π X ++ₛ Θ ]ₜ
+
+    e : A [ π A ] [ σ ] [ π X ++ₛ Θ ] == Ā [ τ ]
+    e = ap (_[ π X ++ₛ Θ ]) ![◦] ∙ ![◦] ∙ [= ! sq' ] ∙ [◦]
+
+    a : Tm (Ā [ τ ])
+    a = coeᵀᵐ e c₀
+
+    σ↑ : Sub (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ) (Γ ∷ X ++ₜₑₗ wkₜₑₗ (Θ' ‣ A))
+    σ↑ = τ ,, a
+
+    P : ((π X ++ₛ Θ') ◦ π Ā) ◦ σ↑ == π A ◦ (σ ◦ (π X ++ₛ Θ))
+    P = ass ∙ ap ((π X ++ₛ Θ') ◦_) βπ ∙ sq' ∙ ass
+
+    Q : coe!ᵀᵐ [◦] ((coe!ᵀᵐ [◦] (υ Ā)) [ σ↑ ]ₜ)
+        == coe!ᵀᵐ [◦] (υ A [ σ ◦ (π X ++ₛ Θ) ]ₜ)
+        over⟨ [= P ] ⟩
+    Q = over-irr $
+      coeᵀᵐ-out ![◦] _
+      ∙ᵈ !ᵈ (coeᵀᵐ-[]ₜ-stable ![◦] (υ Ā) σ↑)
+      ∙ᵈ βυ
+      ∙ᵈ coeᵀᵐ-out e c₀
+      ∙ᵈ !ᵈ [◦]ₜ
+      ∙ᵈ coeᵀᵐ-in ![◦] _
+
+    sq : (π X ++ₛ (Θ' ‣ A)) ◦ σ↑ == σ ◦ (π X ++ₛ Θ)
+    sq = ,,-◦ ∙ ⟨= P ,, Q =⟩ ∙ ! (η-sub (σ ◦ (π X ++ₛ Θ)))
+
+    sl : πₜₑₗ (wkₜₑₗ (Θ' ‣ A)) ◦ σ↑ == πₜₑₗ (wkₜₑₗ Θ)
+    sl = ass ∙ ap (πₜₑₗ (wkₜₑₗ Θ') ◦_) βπ ∙ sl'
+
+  wkn-sub :
+    ∀ {Γ} (Θ Θ' : Tel Γ) (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
+    → πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ
+    → (X : Ty Γ)
+    → Sub (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ) (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ')
+  wkn-sub Θ Θ' σ p X = fst (wkn-sub-lemma Θ Θ' X σ p)
+
+  wkn-sub-comm :
+    ∀ {Γ} (Θ Θ' : Tel Γ) (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
+    → (p : πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ)
+    → (X : Ty Γ)
+    → (π X ++ₛ Θ') ◦ wkn-sub Θ Θ' σ p X == σ ◦ (π X ++ₛ Θ)
+  wkn-sub-comm Θ Θ' σ p X = fst (snd (wkn-sub-lemma Θ Θ' X σ p))
+
+  wkn-sub-π :
+    ∀ {Γ} (Θ Θ' : Tel Γ) (σ : Sub (Γ ++ₜₑₗ Θ) (Γ ++ₜₑₗ Θ'))
+    → (p : πₜₑₗ Θ' ◦ σ == πₜₑₗ Θ)
+    → (X : Ty Γ)
+    → πₜₑₗ (wkₜₑₗ Θ') ◦ wkn-sub Θ Θ' σ p X == πₜₑₗ (wkₜₑₗ Θ)
+  wkn-sub-π Θ Θ' σ p X = snd (snd (wkn-sub-lemma Θ Θ' X σ p))
+
+\end{code}
+
+The two projections out of a weakened telescope context are jointly monic.
+As a consequence, wkn-sub σ is the *unique* substitution fitting into the
+commuting square above and lying over Γ ∷ X; this gives functoriality of
+weakening, which is needed for the functor laws of the matching object
+functor in the diagram construction.
+
+\begin{code}
+
+  wkn-sub-unique :
+    ∀ {Γ} (Θ' : Tel Γ) (X : Ty Γ) {Ξ : Con}
+    → (W W' : Sub Ξ (Γ ∷ X ++ₜₑₗ wkₜₑₗ Θ'))
+    → (π X ++ₛ Θ') ◦ W == (π X ++ₛ Θ') ◦ W'
+    → πₜₑₗ (wkₜₑₗ Θ') ◦ W == πₜₑₗ (wkₜₑₗ Θ') ◦ W'
+    → W == W'
+  wkn-sub-unique • X W W' _ r = ! (idl W) ∙ r ∙ idl W'
+  wkn-sub-unique {Γ} (Θ' ‣ A) X {Ξ} W W' q r =
+    sub= W W' first second
+    where
+    Ā = A [ π X ++ₛ Θ' ]
+
+    -- Rearrange π A ◦ ((π X ++ₛ Θ' ∷ₛ A) ◦ V) for V : Sub Ξ (Γ ∷ X ++ₜₑₗ wkₜₑₗ (Θ' ‣ A))
+    rearr : (V : Sub Ξ (Γ ∷ X ++ₜₑₗ wkₜₑₗ (Θ' ‣ A)))
+      → π A ◦ ((π X ++ₛ (Θ' ‣ A)) ◦ V) == (π X ++ₛ Θ') ◦ (π Ā ◦ V)
+    rearr V = ! ass ∙ ap (_◦ V) ∷ₛ-comm ∙ ass
+
+    q₁ : (π X ++ₛ Θ') ◦ (π Ā ◦ W) == (π X ++ₛ Θ') ◦ (π Ā ◦ W')
+    q₁ = ! (rearr W) ∙ ap (π A ◦_) q ∙ rearr W'
+
+    r₁ : πₜₑₗ (wkₜₑₗ Θ') ◦ (π Ā ◦ W) == πₜₑₗ (wkₜₑₗ Θ') ◦ (π Ā ◦ W')
+    r₁ = ! ass ∙ r ∙ ass
+
+    first : π Ā ◦ W == π Ā ◦ W'
+    first = wkn-sub-unique Θ' X (π Ā ◦ W) (π Ā ◦ W') q₁ r₁
+
+    -- Relate the last component of V to the last component of the composite
+    -- (π X ++ₛ (Θ' ‣ A)) ◦ V, as a dependent path.
+    module _ (V : Sub Ξ (Γ ∷ X ++ₜₑₗ wkₜₑₗ (Θ' ‣ A))) where
+      second-aux =
+        coeᵀᵐ-out ![◦] (υ Ā [ V ]ₜ)
+        ∙ᵈ coeᵀᵐ-[]ₜ-stable ![◦] (υ Ā) V
+        ∙ᵈ !ᵈ (βυ |in-ctx↓ᵀᵐ _[ V ]ₜ)
+        ∙ᵈ !ᵈ ([◦]ₜ {f = V} {g = π X ++ₛ (Θ' ‣ A)} {t = υ A})
+
+    second : coe!ᵀᵐ [◦] (υ Ā [ W ]ₜ) == coe!ᵀᵐ [◦] (υ Ā [ W' ]ₜ)
+             over⟨ [= first ] ⟩
+    second = over-irr $
+      second-aux W
+      ∙ᵈ ↓-ap-in Tm ((A [ π A ]) [_]) (apd (υ A [_]ₜ) q)
+      ∙ᵈ !ᵈ (second-aux W')
+
+\end{code}
+
+\begin{code}
 
 {- Previous version of wkn-sub-lemma had commuting squares instead of triangles,
    which was unnecessary.
