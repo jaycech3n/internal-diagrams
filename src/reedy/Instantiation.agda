@@ -14,7 +14,16 @@ module reedy.Instantiation where
 open import reedy.SimpleSemicategories
 open import reedy.SemiSimplex
 open import cwfs.CwFs
+open import cwfs.Pi
+open import cwfs.Universe
 open import cwfs.Syntax
+
+open CwFStructure synCwF
+open PiStructure synPi
+open UniverseStructure synU
+open import cwfs.Telescopes synCwF
+open Πₜₑₗ synPi
+open TelIndexedTypes synU
 
 import reedy.Diagrams as Diagrams
 
@@ -209,4 +218,84 @@ cwfs.Telescopes.Πₜₑₗ.Πₜₑₗ synCwF synPi
  (inl idp))
 US
 
+There are some experiments with the strictified syntax (which uses rewrites).
+However, there is a better way:
 -}
+
+{-
+The "honest" way to demonstrate that the construction does what it
+claims to do, at least for low numbers. This does not rely on SyntaxStrict
+or rewrite rules. It just shows that the expression that the construction
+produces are *propositionally* equal to what one would expect.
+-}
+
+
+
+open Δ-syntax-diagrams.Convenience using (𝔸 ; A ; Mᵒᵗᵒᵗ)
+
+-- equality of Π-types
+
+Π= : ∀ {Γ} {X X' : TyS Γ} (p : X == X')
+     {B : TyS (Γ ▹S X)} {B' : TyS (Γ ▹S X')}
+   → B == B' [ (λ Z → TyS (Γ ▹S Z)) ↓ p ]
+   → ΠS X B == ΠS X' B'
+Π= idp idp = idp
+
+-- Û is the variable A₀ of the context (◇S ▹S US)
+Û : TmS {◇S ▹S US} US
+Û = coeᵀᵐ U[] (υ U)
+
+-- A 0 is *definitionally* generic[ • ]type
+A0= : A 0 == ElS Û
+A0= = generic[•]type=
+
+-- hand-written contexts that we would expect:
+
+expected-x0 : ConS
+expected-x0 = ◇S
+
+expected-x1 : ConS
+expected-x1 = ◇S ▹S US
+
+-- in nice form, we expect 𝕊𝕊𝕋 2 = (A₀ : U, A₁ : El A₀ → El A₀ → U)
+
+expected-x2 : ConS
+expected-x2 = ◇S ▹S US ▹S ΠS (ElS Û) (ΠS (ElS Û [ pS (ElS Û) ]TS) US)
+
+
+-- the three instances above *are* correct:
+
+x0-correct : 𝕊𝕊𝕋 0 == expected-x0
+x0-correct = idp
+
+x1-correct : 𝕊𝕊𝕋 1 == expected-x1
+x1-correct = idp
+
+-- 𝕊𝕊𝕋 2 is not judgmentally correct, it needs a proof.
+
+𝔸1-shape : 𝔸 1 == ΠS (A 0 [ id ]) (ΠS (A 0 [ id ◦ π (A 0 [ id ]) ]) US)
+𝔸1-shape = idp
+
+private
+  -- the first slot: A 0 [ id ] == El Û
+  q₀ : A 0 [ id ] == ElS Û
+  q₀ = [id] ∙ A0=
+
+  -- the rest of the telescope, as a function of the first slot, so that we can
+  -- transport it along q₀.
+  G : (Z : TyS (◇S ▹S US)) → TyS (◇S ▹S US ▹S Z)
+  G Z = ΠS (A 0 [ id ◦ π Z ]) US
+
+  -- G at the right-hand endpoint is what we want, up to idl and A0=.
+  r : G (ElS Û) == ΠS (ElS Û [ pS (ElS Û) ]TS) US
+  r = ap (λ W → ΠS W US)
+         (ap (A 0 [_]) (idl (π (ElS Û))) ∙ ap (_[ π (ElS Û) ]) A0=)
+
+𝔸1-nf : 𝔸 1 == ΠS (ElS Û) (ΠS (ElS Û [ pS (ElS Û) ]TS) US)
+𝔸1-nf = Π= q₀ (apd G q₀ ▹ r)
+
+x2-correct : 𝕊𝕊𝕋 2 == expected-x2
+x2-correct = ap (◇S ▹S US ▹S_) 𝔸1-nf
+
+-- Moral of the story: The strictification doesn't actually buy us very much
+-- (one level more definitional, but we also don't get 𝕊𝕊𝕋 3.)

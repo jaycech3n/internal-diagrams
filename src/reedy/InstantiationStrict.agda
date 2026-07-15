@@ -75,13 +75,13 @@ expected2 = ◇X ▹X UX ▹X 𝔸1
 -- The constructed terms are judgmentall the hand-written ones:
 
 --   𝕊𝕊𝕋 0 = ()
-y0-nf : y0 == expected0
-y0-nf = idp
+y0-correct : 𝕊𝕊𝕋ˣ 0 == expected0
+y0-correct = idp
 
 --   𝕊𝕊𝕋 1 = (A₀ : U)
-y1-nf : y1 == expected1
-y1-nf = idp
+y1-correct : 𝕊𝕊𝕋ˣ 1 == expected1
+y1-correct = idp
 
 --   𝕊𝕊𝕋 2 = (A₀ : U, A₁ : A₀ → A₀ → U)
-y2-nf : y2 == expected2
-y2-nf = idp
+y2-correct : 𝕊𝕊𝕋ˣ 2 == expected2
+y2-correct = idp
